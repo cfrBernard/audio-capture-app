@@ -1,9 +1,37 @@
 import tkinter as tk
-from tkinter import ttk, simpledialog
+from tkinter import ttk, simpledialog, messagebox, filedialog
 import sounddevice as sd
 import numpy as np
 import wave
+import os
 from datetime import datetime
+
+# Filepath to the config file
+config_file_path = 'config.txt'
+
+# Default save directory (the current directory of the application)
+default_save_directory = os.getcwd()
+
+# Function to read the config file and load the save directory
+def load_config():
+    global save_directory
+    save_directory = default_save_directory  # Set default directory at the beginning
+    
+    if os.path.exists(config_file_path):
+        with open(config_file_path, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.startswith('save_directory='):
+                    save_directory = line.strip().split('=')[1]
+                    break
+    
+    # Update the label to display the correct path
+    save_directory_button.config(text=f"Save Directory: {save_directory}")
+
+# Function to write the save directory to the config file
+def save_config():
+    with open(config_file_path, 'w') as f:
+        f.write(f"save_directory={save_directory}\n")
 
 # Function to retrieve valid input devices
 def get_input_devices():
@@ -20,6 +48,7 @@ def get_input_devices():
 listening = False
 circular_buffer = None
 stream = None
+save_directory = None
 
 # Function to log messages
 def log_message(message):
@@ -38,7 +67,7 @@ def start_listening():
     
     try:
         listening = True
-        pastille_label.config(bg="red")  # Visual indicator
+        pastille_canvas.itemconfig(pastille, fill="red")  # Visual indicator (red dot)
         selected_device = device_combobox.get()
         device_index = next(i for i, d in enumerate(sd.query_devices()) if d['name'] == selected_device)
         sd.default.device = device_index
@@ -68,7 +97,7 @@ def stop_listening():
     global listening, stream
     if listening:
         listening = False
-        pastille_label.config(bg="gray")  # Reset visual indicator
+        pastille_canvas.itemconfig(pastille, fill="gray")  # Reset visual indicator (gray dot)
         if stream is not None:
             stream.stop()  # Stop the stream
             stream.close()  # Close the stream
@@ -76,9 +105,19 @@ def stop_listening():
     else:
         log_message("No listening session is currently active.")
 
+# Function to select the directory for saving captures
+def select_save_directory():
+    global save_directory
+    directory = filedialog.askdirectory(title="Select Folder for Captures")
+    if directory:  # Only update if the user selects a directory
+        save_directory = directory
+        save_directory_button.config(text=f"Save Directory: {save_directory}")
+        log_message(f"Capture files will be saved to: {save_directory}")
+        save_config()  # Save the new directory to the config file
+
 # Function to capture audio and save it to a file
 def capture_audio():
-    global listening, circular_buffer, stream
+    global listening, circular_buffer, stream, save_directory
     if not listening:
         log_message("Error: Listening has not started.")
         return
@@ -87,11 +126,34 @@ def capture_audio():
     log_message("Pausing listening for capture configuration...")
     stop_listening()
     
-    # Ask user for file name and capture duration
-    filename = simpledialog.askstring("File Name", "Enter the file name (e.g., capture_YYYYMMDD_HHMMSS.wav):",
-                                      initialvalue=f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav")
-    if not filename:
-        return
+    # Loop to ensure a valid filename is entered
+    while True:
+        filename = simpledialog.askstring("File Name", "Enter the file name (without extension):",
+                                          initialvalue=f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        
+        # If the user clicks Cancel or doesn't enter a filename
+        if filename is None or filename.strip() == "":
+            messagebox.showerror("Invalid Input", "Please enter a valid file name.")
+            continue
+        
+        # Add '.wav' extension if not present
+        if not filename.lower().endswith('.wav'):
+            filename += '.wav'
+        
+        # Check if save directory is selected
+        if not save_directory:
+            save_directory = default_save_directory  # Use default directory if not selected
+            log_message(f"No directory selected. Using default directory: {save_directory}")
+        
+        # Check if file already exists in the selected directory
+        file_path = os.path.join(save_directory, filename)
+        if os.path.exists(file_path):
+            overwrite = messagebox.askyesno("File exists", f"The file {filename} already exists. Do you want to overwrite it?")
+            if not overwrite:
+                log_message("Capture aborted: file not overwritten.")
+                continue
+        
+        break  # Exit the loop once a valid filename is provided
 
     duration = simpledialog.askinteger("Capture Duration", "Capture duration (in seconds, 1-300):",
                                        minvalue=1, maxvalue=300)
@@ -105,12 +167,12 @@ def capture_audio():
 
     # Save to WAV file
     try:
-        with wave.open(filename, 'wb') as wf:
+        with wave.open(file_path, 'wb') as wf:
             wf.setnchannels(1)  # Mono
             wf.setsampwidth(2)  # 16-bit
             wf.setframerate(sample_rate)
             wf.writeframes((captured_audio * 32767).astype(np.int16))  # Convert to int16
-        log_message(f"Capture saved as {filename}")
+        log_message(f"Capture saved as {file_path}")
     except Exception as e:
         log_message(f"Error saving the recording: {e}")
 
@@ -118,18 +180,44 @@ def capture_audio():
     log_message("Resuming listening...")
     start_listening()
 
+# Function to update the visual spectrum (simple amplitude-based display)
+def update_spectrometer():
+    global circular_buffer
+    if listening and circular_buffer is not None:
+        # Get the latest data from the circular buffer
+        data = circular_buffer[-2048:]  # Take the last 2048 samples for better sensitivity
+        
+        # Calculate the amplitude (root mean square of the signal)
+        amplitude = np.sqrt(np.mean(data**2))
+        
+        # Update the spectrometer bars based on the amplitude
+        # Adjust the threshold for each bar based on the intensity
+        for i in range(len(spectrometer_bars)):
+            # More sensitive display
+            if amplitude > (i + 1) * 0.005:  # Lower threshold for even greater sensitivity
+                spectrometer_bars[i].config(height=10)  # Show bar (height 10)
+            else:
+                spectrometer_bars[i].config(height=1)  # Hide bar (height 1)
+    
+    # Call the function again after 50ms to update the spectrometer in real-time
+    root.after(50, update_spectrometer)
+
 # Setup the main window
 root = tk.Tk()
 root.title("Select an Input Device")
-root.geometry("500x400")
+root.geometry("500x600")
 
 # Title label
-label = tk.Label(root, text="Select an Audio Input Device")
+label = tk.Label(root, text="Select an Audio Input Device", font=("Arial", 14))
 label.pack(pady=10)
 
+# Frame for input device selection
+device_frame = tk.Frame(root)
+device_frame.pack(pady=10)
+
 # ComboBox for selecting the device
-device_combobox = ttk.Combobox(root, width=50)
-device_combobox.pack(pady=10)
+device_combobox = ttk.Combobox(device_frame, width=40)
+device_combobox.grid(row=0, column=0, padx=10)
 
 # Initialize the list of devices
 input_devices = get_input_devices()
@@ -137,25 +225,71 @@ device_combobox['values'] = input_devices
 if input_devices:
     device_combobox.current(0)
 
-# Button to start listening
-start_button = tk.Button(root, text="Start Listening", command=start_listening)
-start_button.pack(pady=10)
+# Frame for listening control
+control_frame = tk.Frame(root)
+control_frame.pack(pady=20)
 
-# Button to stop listening
-stop_button = tk.Button(root, text="Stop Listening", command=stop_listening)
-stop_button.pack(pady=10)
+# Start Listening button
+start_button = tk.Button(control_frame, text="Start Listening", command=start_listening)
+start_button.grid(row=0, column=0, padx=10)
 
-# Button to capture audio
+# Canvas for visual indicator (red dot)
+pastille_canvas = tk.Canvas(control_frame, width=20, height=20)
+pastille = pastille_canvas.create_oval(5, 5, 15, 15, fill="gray")
+pastille_canvas.grid(row=0, column=1, padx=10)
+
+# Stop Listening button
+stop_button = tk.Button(control_frame, text="Stop Listening", command=stop_listening)
+stop_button.grid(row=0, column=2, padx=10)
+
+# Spectrometer container frame with fixed dimensions
+spectrometer_container = tk.Frame(root, height=25, width=350,)
+spectrometer_container.pack_propagate(False)  # Prevents resizing
+spectrometer_container.pack(pady=20)
+
+# Inner canvas for the spectrometer
+spectrometer_canvas = tk.Canvas(spectrometer_container, height=25, width=350)
+spectrometer_canvas.pack(fill=tk.BOTH, expand=True)
+
+# Inner frame for spectrometer bars
+spectrometer_frame = tk.Frame(spectrometer_canvas, height=25, width=350)
+spectrometer_frame.pack_propagate(False)  # Prevent the frame from resizing to its children
+spectrometer_canvas.create_window((0, 0), window=spectrometer_frame, anchor="nw")
+
+# Define the size and layout for bars
+spectrometer_bars = []
+num_bars = 80
+bar_width = 6
+bar_spacing = 1
+bar_height = 1  # Minimum height
+
+for i in range(num_bars):
+    bar = tk.Canvas(
+        spectrometer_frame,
+        width=bar_width,
+        height=bar_height,
+        bg="black",
+        highlightthickness=0  # Remove border
+    )
+    bar.place(x=i * (bar_width + bar_spacing), y=0)  # Position bar
+    spectrometer_bars.append(bar)
+
+# Add capture button and save directory button
 capture_button = tk.Button(root, text="Capture", command=capture_audio)
 capture_button.pack(pady=10)
 
-# Visual indicator for active listening
-pastille_label = tk.Label(root, text="", bg="gray", width=10, height=2)
-pastille_label.pack(pady=10)
+save_directory_button = tk.Button(root, text="Save Directory: ", command=select_save_directory)
+save_directory_button.pack(pady=10)
 
-# Log text area to display messages
-log_text = tk.Text(root, width=60, height=10, wrap=tk.WORD, state=tk.DISABLED)
-log_text.pack(padx=10, pady=10)
+# Log window for feedback
+log_text = tk.Text(root, height=10, width=60, state=tk.DISABLED)
+log_text.pack(pady=10)
 
-# Start the graphical interface
+# Initialize spectrometer update loop
+update_spectrometer()
+
+# Load the configuration file
+load_config()
+
+# Start the Tkinter main loop
 root.mainloop()

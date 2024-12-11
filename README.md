@@ -16,6 +16,13 @@ This tool was developed to help with **organizing**, **sorting**, and **capturin
   - Save the configuration persistently across sessions.
 - **Error Handling**: Intuitive error messages and feedback for invalid input or missing configurations.
 
+---
+
+## Quick Download
+For the latest '.exe' version, go to the [Releases](https://github.com/cfrBernard/audio-capture-app/releases) page.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -108,3 +115,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## Author
 
 Developed with ❤️ by [cfrBernard] for easier organization and capture of audio improvisations.
+
+---
+
+**Note**: A MacOS version will be released in the future.

@@ -115,70 +115,71 @@ def select_save_directory():
         log_message(f"Capture files will be saved to: {save_directory}")
         save_config()  # Save the new directory to the config file
 
-# Function to capture audio and save it to a file
 def capture_audio():
     global listening, circular_buffer, stream, save_directory
     if not listening:
         log_message("Error: Listening has not started.")
         return
-    
+
     # Pause listening while configuring the capture
     log_message("Pausing listening for capture configuration...")
     stop_listening()
-    
-    # Loop to ensure a valid filename is entered
-    while True:
-        filename = simpledialog.askstring("File Name", "Enter the file name (without extension):",
-                                          initialvalue=f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-        
-        # If the user clicks Cancel or doesn't enter a filename
-        if filename is None or filename.strip() == "":
-            messagebox.showerror("Invalid Input", "Please enter a valid file name.")
-            continue
-        
-        # Add '.wav' extension if not present
-        if not filename.lower().endswith('.wav'):
-            filename += '.wav'
-        
-        # Check if save directory is selected
-        if not save_directory:
-            save_directory = default_save_directory  # Use default directory if not selected
-            log_message(f"No directory selected. Using default directory: {save_directory}")
-        
-        # Check if file already exists in the selected directory
-        file_path = os.path.join(save_directory, filename)
-        if os.path.exists(file_path):
-            overwrite = messagebox.askyesno("File exists", f"The file {filename} already exists. Do you want to overwrite it?")
-            if not overwrite:
-                log_message("Capture aborted: file not overwritten.")
-                continue
-        
-        break  # Exit the loop once a valid filename is provided
 
-    duration = simpledialog.askinteger("Capture Duration", "Capture duration (in seconds, 1-300):",
-                                       minvalue=1, maxvalue=300)
-    if not duration:
+    # Prompt for the filename
+    filename = simpledialog.askstring("File Name", "Enter the file name:",
+                                       initialvalue=f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    if not filename:  # Cancel pressed or empty input
+        log_message("Capture canceled by the user.")
+        start_listening()
         return
 
-    # Retrieve necessary data from the buffer
-    sample_rate = 44100
-    num_samples = duration * sample_rate
-    captured_audio = circular_buffer[-num_samples:]
+    # Ensure the extension
+    if not filename.lower().endswith('.wav'):
+        filename += '.wav'
 
-    # Save to WAV file
+    # Check save directory
+    if not save_directory:
+        save_directory = default_save_directory
+        log_message(f"No directory selected. Using default directory: {save_directory}")
+
+    # Generate the full file path
+    file_path = os.path.join(save_directory, filename)
+
+    # Check for overwrites
+    if os.path.exists(file_path):
+        overwrite = messagebox.askyesno("File exists", f"The file {filename} already exists. Do you want to overwrite it?")
+        if not overwrite:
+            log_message("Capture aborted: file not overwritten.")
+            start_listening()
+            return
+
+    # Prompt for duration
+    duration = simpledialog.askinteger("Capture Duration", "Capture duration (in seconds, 1-300):",
+                                       minvalue=1, maxvalue=300)
+    if not duration:  # Cancel pressed
+        log_message("Capture canceled.")
+        start_listening()
+        return
+
+    # Retrieve and save data
     try:
+        sample_rate = 44100
+        num_samples = duration * sample_rate
+        captured_audio = circular_buffer[-num_samples:]
+
         with wave.open(file_path, 'wb') as wf:
-            wf.setnchannels(1)  # Mono
-            wf.setsampwidth(2)  # 16-bit
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
             wf.setframerate(sample_rate)
-            wf.writeframes((captured_audio * 32767).astype(np.int16))  # Convert to int16
+            wf.writeframes((captured_audio * 32767).astype(np.int16))
         log_message(f"Capture saved as {file_path}")
     except Exception as e:
         log_message(f"Error saving the recording: {e}")
 
-    # Resume listening after the capture dialog is closed
+    # Resume listening after capture dialog closes
     log_message("Resuming listening...")
     start_listening()
+
 
 # Function to update the visual spectrum (simple amplitude-based display)
 def update_spectrometer():
@@ -204,11 +205,11 @@ def update_spectrometer():
 
 # Setup the main window
 root = tk.Tk()
-root.title("Select an Input Device")
-root.geometry("500x600")
+root.title("Audio capture app")
+root.geometry("350x500")
 
 # Title label
-label = tk.Label(root, text="Select an Audio Input Device", font=("Arial", 14))
+label = tk.Label(root, text="Select an Audio Input Device", font=("Arial", 13))
 label.pack(pady=10)
 
 # Frame for input device selection
@@ -216,7 +217,7 @@ device_frame = tk.Frame(root)
 device_frame.pack(pady=10)
 
 # ComboBox for selecting the device
-device_combobox = ttk.Combobox(device_frame, width=40)
+device_combobox = ttk.Combobox(device_frame, width=35)
 device_combobox.grid(row=0, column=0, padx=10)
 
 # Initialize the list of devices
@@ -276,10 +277,10 @@ for i in range(num_bars):
 
 # Add capture button and save directory button
 capture_button = tk.Button(root, text="Capture", command=capture_audio)
-capture_button.pack(pady=10)
+capture_button.pack(pady=0)
 
 save_directory_button = tk.Button(root, text="Save Directory: ", command=select_save_directory)
-save_directory_button.pack(pady=10)
+save_directory_button.pack(pady=30)
 
 # Log window for feedback
 log_text = tk.Text(root, height=10, width=60, state=tk.DISABLED)

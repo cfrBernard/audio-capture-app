@@ -103,6 +103,7 @@ python app.py
 
 ## Future Enhancements
 
+- Add MIDI support (for input & export). 
 - Add support for stereo audio input.
 - Enhance the spectrometer with frequency domain analysis.
 - Implement additional audio file formats (e.g., MP3).

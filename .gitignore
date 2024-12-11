@@ -5,3 +5,6 @@ __pycache__/
 .env
 venv/
 config.txt
+build/
+dist/
+app.spec

@@ -50,8 +50,6 @@ pip install -r requirements.txt
 python app.py
 ```
 
-4. Select an input device from the dropdown and start listening!
-
 ## How to Use
 
 ### Selecting an Input Device

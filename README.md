@@ -113,7 +113,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Author
 
-Developed with ❤️ by [cfrBernard] for easier organization and capture of audio improvisations.
+Developed with ❤️ by [cfrBernard](https://github.com/cfrBernard) for easier organization and capture of audio improvisations.
 
 ---
 

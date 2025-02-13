@@ -2,6 +2,16 @@
 
 This tool was developed to help with **organizing**, **sorting**, and **capturing improvised audio recordings**. It allows users to listen to audio input from a selected device, visualize it in real-time with a spectrometer, and easily capture short audio snippets with user-defined filenames and durations. It also provides a convenient way to manage saved captures and configure the save directory.
 
+<br>
+
+<p align="center">
+  <img src="demo/Audio-Capture-App-v1.0.0_M34NcRNW4H.png" alt="Screenshot 1" width="30%" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="demo/Audio-Capture-App-v1.0.0_M34NcRNW4K.PNG" alt="Screenshot 2" width="30%" />
+</p>
+
+<br>
+
 ## Features
 
 - **Device Selection**: Easily select an input audio device from a dropdown menu.
@@ -19,7 +29,7 @@ This tool was developed to help with **organizing**, **sorting**, and **capturin
 ---
 
 ## Quick Download
-For the latest '.exe' version, go to the [Releases](https://github.com/cfrBernard/audio-capture-app/releases) page.
+For the latest `.exe` version, go to the [Releases](https://github.com/cfrBernard/audio-capture-app/releases) page.
 
 ---
 

@@ -5,9 +5,9 @@ This tool was developed to help with **organizing**, **sorting**, and **capturin
 <br>
 
 <p align="center">
-  <img src="demo/Audio-Capture-App-v1.0.0_M34NcRNW4H.png" alt="Screenshot 1" width="30%" />
+  <img src="demo/Audio-Capture-App-v1.0.0_M34NcRNW4H.png" alt="Screenshot 1" width="45%" />
   &nbsp;&nbsp;&nbsp;
-  <img src="demo/Audio-Capture-App-v1.0.0_M34NcRNW4K.PNG" alt="Screenshot 2" width="30%" />
+  <img src="demo/Audio-Capture-App-v1.0.0_M34NcRNW4K.PNG" alt="Screenshot 2" width="45%" />
 </p>
 
 <br>

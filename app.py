@@ -260,7 +260,7 @@ spectrometer_canvas.create_window((0, 0), window=spectrometer_frame, anchor="nw"
 # Define the size and layout for bars
 spectrometer_bars = []
 num_bars = 80
-bar_width = 6
+bar_width = 5
 bar_spacing = 1
 bar_height = 1  # Minimum height
 

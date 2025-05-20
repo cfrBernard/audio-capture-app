@@ -2,7 +2,7 @@
 
 This tool was developed to help with **organizing**, **sorting**, and **capturing improvised audio recordings**. It allows users to listen to audio input from a selected device, visualize it in real-time with a spectrometer, and easily capture short audio snippets with user-defined filenames and durations. It also provides a convenient way to manage saved captures and configure the save directory.
 
-[**Download the latest version here**](https://github.com/cfrBernard/MaskMapWizard/releases)
+[**Download the latest version here**](https://github.com/cfrBernard/audio-capture-app/releases)
 
 ![Version](https://img.shields.io/badge/version-v1.0.0-blue)
 ![License](https://img.shields.io/github/license/cfrBernard/MaskMapWizard)
